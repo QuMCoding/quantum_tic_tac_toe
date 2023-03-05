@@ -16,22 +16,26 @@ class CenterText:
     """Centered Text Class"""
 
     def __init__(self, text, _x, _y, size=20, color=(0, 0, 0)):
+        # 設定中心位置
         self.x = _x
         self.y = _y
+
+        # 將pygame的字體設定好
         pygame.font.init()
         font = pygame.font.SysFont("Consolas", size)
-        self.txt = font.render(text, True, color)
+        self.txt = font.render(text, True, color)  # 將需要的字轉化成pygame物件
         self.size = font.size(text)  # (width, height)
 
-    # Draw Method
+    # 將文字渲染到螢幕上
     def draw(self, screen):
+        # 計算真實位置
         drawX = self.x - (self.size[0] / 2.)
         drawY = self.y - (self.size[1] / 2.)
-        coords = (drawX, drawY)
-        screen.blit(self.txt, coords)
+        coords = (drawX, drawY)  # 真實座標
+        screen.blit(self.txt, coords)  # 將東西渲染上去
 
 
-# OOXX在畫面上
+# 在畫面上的OOXX
 class OneMove(pygame.sprite.Sprite):
     """
     Add a cross or circle to the board.
@@ -41,41 +45,53 @@ class OneMove(pygame.sprite.Sprite):
 
     def __init__(self, player: int, number: int, pos: Sequence[int]):
         super().__init__()
-        self.font = pygame.font.SysFont("Consolas", 15 if number > 0 else 40)
-        self.player = player
-        self.number = number
-        self.size = 40 if number > 0 else 120
-        self.image = pygame.image.load(r"circle.png" if player == 1 else r"cross.png")
-        self.image = pygame.transform.scale(self.image, (self.size, self.size))
+        self.font = pygame.font.SysFont("Consolas", 15 if number > 0 else 40)  # 將字體設定好
+        self.player = player  # 設定自己是O還是X
+        self.number = number  # 若為負數，則為已被觀測的步。其絕對值為那步的下標數字
+        self.size = 40 if number > 0 else 120  # 設定大小，已確定的步會較大
+        self.image = pygame.image.load(r"circle.png" if player == 1 else r"cross.png")  # 設定自己的圖片
+        self.image = pygame.transform.scale(self.image, (self.size, self.size))  # 設定圖片的大小
+        # 將自己渲染到畫面上
         self.rect = pygame.Rect(pos[0], pos[1], 1, 1)
         self.image.blit(self.font.render(str(abs(number)), True, (0, 0, 0)), (self.size // 1.3, self.size // 2.2))
 
 
-# 檢查有沒有環在遊戲裡
+# 檢查有沒有環在遊戲裡，使用暴力法
 def has_cycle(wanted_board):
+    # 定義一個Tree的節點
     class Node:
         def __init__(self, val=None, roads=None, parent=None):
-            self.parent = parent
-            self.next = []
-            self.val = val
-            self.roads = roads
-            self.find_next()
-            self.find_cyclic()
+            self.parent = parent  # 自己的父節點
+            self.next = []  # 自己的子節點
+            self.val = val  # 自己的值
+            self.roads = roads  # 所有道路，key為兩端，value為有幾條
+            # 執行函式
+            self.find_next()  # 找到所有子節點
+            self.find_cyclic()  # 找到有環的部分
 
+        # 找到子節點
         def find_next(self):
+            # 將roads的keys裡包含自己的遍歷一次
             for _k, _v in {k: v for k, v in self.roads.items() if self.val in k}.items():
+                # val的值為road的另一端
+                # roads的值為所有不包含自己那條road的剩下的部分，也就是原本的roads把現在這條的value減1。"|"代表合併起來，限Python3.9以上
+                # parent就是自己
                 _next = Node(val=next(filter(lambda t: t != self.val, _k)),
                              roads={k: v for k, v in self.roads.items() if k != _k} |
                                    {k: v - 1 for k, v in self.roads.items() if k == _k and v - 1 > 0},
                              parent=self)
-                self.next.append(_next)
+                self.next.append(_next)  # 將子節點新增到next裡
 
+        # 尋找有沒有環，一直往上找父節點
         def find_cyclic(self):
-            global cycle
-            _now = self.parent
-            o = []
+            global cycle  # 跟之後說cycle是全域的變數
+            _now = self.parent  # 現在檢查的
+            o = []  # 已經找過的節點
+
+            # 找到沒有父節點為止
             while _now is not None:
-                o.append(_now.val)
+                o.append(_now.val)  # 將現在檢查的放進已經找過的
+                # 檢查自己的值是否跟
                 if _now.val == self.val:
                     cycle = set(o)
                     return o
@@ -108,6 +124,7 @@ def check_collapse(board_wanted, target_cycle):
     return touched
 
 
+# 將dict格式的board渲染到畫面上
 def board_render(board_wanted=None) -> None:
     for e in board_widgets:
         e.kill()
@@ -120,8 +137,9 @@ def board_render(board_wanted=None) -> None:
             board_widgets.add(move)
 
 
+# 更新1幀
 def update_frame():
-    root.fill((255, 255, 255))
+    root.fill((255, 255, 255))  # 將整個畫面洗白
     board_render(board)
     board_widgets.draw(root)
     # 畫框框
