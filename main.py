@@ -47,7 +47,7 @@ class OneMove(pygame.sprite.Sprite):
         self.player = player  # 設定自己是O還是X
         self.number = number  # 若為負數，則為已被觀測的步。其絕對值為那步的下標數字
         self.size = 40 if number > 0 else 120  # 設定大小，已確定的步會較大
-        self.image = pygame.image.load(r"circle.png" if player == 1 else r"cross.png")  # 設定自己的圖片
+        self.image = pygame.image.load(r"assets/circle.png" if player == 1 else r"assets/cross.png")  # 設定自己的圖片
         self.image = pygame.transform.scale(self.image, (self.size, self.size))  # 設定圖片的大小
         # 將自己渲染到畫面上
         self.rect = pygame.Rect(pos[0], pos[1], 1, 1)
