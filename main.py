@@ -1,5 +1,5 @@
 """
-for Python >= 3.9.0
+for Python >= 3.5
 written in python 3.10.8
 """
 
@@ -75,8 +75,8 @@ def has_cycle(wanted_board):
                 # roads的值為所有不包含自己那條road的剩下的部分，也就是原本的roads把現在這條的value減1。"|"代表合併起來，限Python3.9以上
                 # parent就是自己
                 _next = Node(val=next(filter(lambda t: t != self.val, _k)),
-                             roads={k: v for k, v in self.roads.items() if k != _k} |
-                                   {k: v - 1 for k, v in self.roads.items() if k == _k and v - 1 > 0},
+                             roads={**{k: v for k, v in self.roads.items() if k != _k},
+                                    **{k: v - 1 for k, v in self.roads.items() if k == _k and v - 1 > 0}},
                              parent=self)
                 self.next.append(_next)  # 將子節點新增到next裡
 
