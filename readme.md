@@ -9,7 +9,6 @@ Welcome to Quantum Tic Tac Toe! This project combines the classic game of Tic Ta
 2. [How to Play](#how-to-play)
 3. [Requirements](#requirements)
 4. [Contributing](#contributing)
-5. [License](#license)
 
 ## Installation
 
@@ -82,9 +81,3 @@ This game combines the classic Tic Tac Toe with the intriguing principles of qua
 ## Contributing
 
 If you would like to contribute to Quantum Tic Tac Toe, please follow the [contributing guidelines](CONTRIBUTING.md).
-
-## License
-
-This project is licensed under the [MIT License](LICENSE). Feel free to use, modify, and distribute the code for personal or open-source projects.
-
-Enjoy playing Quantum Tic Tac Toe! If you have any questions or feedback, feel free to reach out to the project maintainers.
