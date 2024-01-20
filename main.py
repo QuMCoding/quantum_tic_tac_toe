@@ -172,6 +172,8 @@ def update_frame():
 
     # 畫按鈕
     pygame.draw.rect(root, (0, 100, 200), pygame.Rect(100, 600, 150, 80), border_radius=10)
+    action_btn_word = CenterText("action", 175, 640, size=30, color=(255, 255, 255))
+    action_btn_word.draw(root)
     board_widgets.update()
     pygame.display.update()
 
