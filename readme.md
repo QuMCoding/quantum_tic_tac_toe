@@ -5,6 +5,7 @@ Welcome to Quantum Tic Tac Toe! This project combines the classic game of Tic Ta
 ## Table of Contents
 
 1. [Installation](#installation)
+2. [Game Rule](#game-rule)
 2. [How to Play](#how-to-play)
 3. [Requirements](#requirements)
 4. [Contributing](#contributing)
