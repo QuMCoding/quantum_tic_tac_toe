@@ -6,9 +6,8 @@ Welcome to Quantum Tic Tac Toe! This project combines the classic game of Tic Ta
 
 1. [Installation](#installation)
 2. [Game Rule](#game-rule)
-2. [How to Play](#how-to-play)
-3. [Requirements](#requirements)
-4. [Contributing](#contributing)
+3. [How to Play](#how-to-play)
+4. [Requirements](#requirements)
 
 ## Installation
 
@@ -78,6 +77,3 @@ This game combines the classic Tic Tac Toe with the intriguing principles of qua
 - Python 3.5 or up
 - Pygame library
 
-## Contributing
-
-If you would like to contribute to Quantum Tic Tac Toe, please follow the [contributing guidelines](CONTRIBUTING.md).
