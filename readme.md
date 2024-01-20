@@ -30,7 +30,7 @@ To run Quantum Tic Tac Toe on your machine, follow these steps:
 
 4. Run the game:
    ```
-   python quantum_tic_tac_toe.py
+   python main.py
    ```
 
 ## Game Rule
