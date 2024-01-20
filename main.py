@@ -260,23 +260,29 @@ while True:
                     collapse_boxes = check_collapse(board, cycle)  # the boxes that will be changed
                     collapse = board[(rx, ry)]  # the box the user chose
                     # check if user's input is valid
-                    if (not (srx is None or sry is None)) and (srx + sry * 3) < len(collapse) and \
-                            collapse[srx + sry * 3] not in (board[_l][0] for _l in collapse_boxes if
-                                                            len(board[_l]) == 1):
-                        eliminated = {(rx, ry), }  # store who has been eliminated
-                        death_note = set()  # store who should be died
-                        board[rx, ry] = [collapse[srx + sry * 3]]  # kill the opposite of which user picked
-                        while len(eliminated) < len(collapse_boxes):  # if everyone is "processed"
-                            for c in collapse_boxes:
-                                if len(board[c]) <= 1:
-                                    board[c] = [(board[c][0][0], abs(board[c][0][1]) * -1)]
-                                    death_note.add((board[c][0][0], abs(board[c][0][1])))
-                                    eliminated.add(c)
-                                for con in collapse_boxes:
-                                    board[con] = [o for o in board[con] if o not in death_note]
-                        collapse_flag = False
-                        board_widgets.empty()
-                    else:
-                        error_msg("invalid collapse move")
+                    if (srx is None or sry is None):
+                        error_msg("make a move")
+                        continue
+                    if (srx + sry * 3) >= len(collapse):
+                        error_msg("click on the symbol you want to collapse")
+                        continue
+                    if collapse[srx + sry * 3] in (board[_l][0] for _l in collapse_boxes if len(board[_l]) == 1):
+                        error_msg("you must observe the symbol in the closed loop")
+                        continue
+
+                    eliminated = {(rx, ry), }  # store who has been eliminated
+                    death_note = set()  # store who should be died
+                    board[rx, ry] = [collapse[srx + sry * 3]]  # kill the opposite of which user picked
+                    while len(eliminated) < len(collapse_boxes):  # if everyone is "processed"
+                        for c in collapse_boxes:
+                            if len(board[c]) <= 1:
+                                board[c] = [(board[c][0][0], abs(board[c][0][1]) * -1)]
+                                death_note.add((board[c][0][0], abs(board[c][0][1])))
+                                eliminated.add(c)
+                            for con in collapse_boxes:
+                                board[con] = [o for o in board[con] if o not in death_note]
+                    collapse_flag = False
+                    board_widgets.empty()
+                    current_error_msg = ""
                 update_frame()
                 
