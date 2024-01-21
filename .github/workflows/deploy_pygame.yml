@@ -8,10 +8,6 @@ on:
 jobs:
   build-pygbag:
     name: Quantum Tic Tac Toe
-    env:
-      MY_SECRET   : ${{secrets.commit_secret}}
-      USER_NAME   : githubaction
-      USER_EMAIL  : githubaction@fake.com
     runs-on: ubuntu-latest
 
     steps:
@@ -29,4 +25,5 @@ jobs:
       uses: JamesIves/github-pages-deploy-action@4.1.7
       with:
         branch: gh-pages
+        token: ${{ secrets.TOKEN }}
         folder: build/web
