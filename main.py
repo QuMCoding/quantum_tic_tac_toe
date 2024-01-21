@@ -7,6 +7,7 @@ import sys
 import pygame
 from typing import Sequence
 from collections import defaultdict
+import asyncio
 
 
 # 中間的文字
@@ -200,89 +201,97 @@ current_error_msg = ""  # 當前的錯誤訊息
 # 畫OOXX的群組
 board_widgets = pygame.sprite.Group()
 
-update_frame()
 
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
-        if event.type == pygame.MOUSEBUTTONUP:
-            x, y = pygame.mouse.get_pos()
-            # boxes
-            _rx = (x - 80) // 150
-            _ry = (y - 100) // 150
-            _rx = _rx if 0 <= _rx <= 2 else None
-            _ry = _ry if 0 <= _ry <= 2 else None
-            if not (_rx is None or _ry is None):
-                rx, ry = _rx, _ry
-                # in collapse mode, need more detail.
-                if collapse_flag:
-                    sub_rx = (x - 80 - rx * 150) // 50
-                    sub_ry = (y - 100 - ry * 150) // 50
-                    sub_rx = sub_rx if 0 <= sub_rx <= 2 else None
-                    sub_ry = sub_ry if 0 <= sub_ry <= 2 else None
-                    if not (sub_rx is None or sub_ry is None):
-                        srx, sry = sub_rx, sub_ry
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            x, y = pygame.mouse.get_pos()
-            # triggered the button
-            if 100 <= x <= 250 and 600 <= y <= 680:
-                if rx is None or ry is None:
-                    error_msg("make a move")
-                    continue
-                # check if is determined
-                if board[(rx, ry)] and board[(rx, ry)][0][1] < 0:
-                    error_msg("you should not place a symbol in a determined box")
-                    continue
-                # regular move
-                if not collapse_flag:
-                    collapse_flag = False
-                    # check if the symbol is already in the box
-                    if ((ROUND // 2) % 2, ROUND // 4 + 1) in board[rx, ry]:
-                        error_msg("you should not place two same symbols in one box")
-                        continue
+async def main():
+    global ROUND, rx, ry, srx, sry, collapse_flag, current_error_msg, board, cycle, board_widgets
+    update_frame()
 
-                    # mess with board
-                    board[rx, ry].append(((ROUND // 2) % 2, ROUND // 4 + 1))
-                    rx, ry = None, None
-                    if ROUND % 2 == 1:
-                        # check if it's cyclic
-                        cycle = set()
-                        has_cycle(board)
-                        if len(cycle) > 0:
-                            collapse_flag = True
-                    current_error_msg = ""
-                    ROUND += 1
-                # collapse move
-                else:
-                    collapse_flag = True
-                    collapse_boxes = check_collapse(board, cycle)  # the boxes that will be changed
-                    collapse = board[(rx, ry)]  # the box the user chose
-                    # check if user's input is valid
-                    if (srx is None or sry is None):
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONUP:
+                x, y = pygame.mouse.get_pos()
+                # boxes
+                _rx = (x - 80) // 150
+                _ry = (y - 100) // 150
+                _rx = _rx if 0 <= _rx <= 2 else None
+                _ry = _ry if 0 <= _ry <= 2 else None
+                if not (_rx is None or _ry is None):
+                    rx, ry = _rx, _ry
+                    # in collapse mode, need more detail.
+                    if collapse_flag:
+                        sub_rx = (x - 80 - rx * 150) // 50
+                        sub_ry = (y - 100 - ry * 150) // 50
+                        sub_rx = sub_rx if 0 <= sub_rx <= 2 else None
+                        sub_ry = sub_ry if 0 <= sub_ry <= 2 else None
+                        if not (sub_rx is None or sub_ry is None):
+                            srx, sry = sub_rx, sub_ry
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = pygame.mouse.get_pos()
+                # triggered the button
+                if 100 <= x <= 250 and 600 <= y <= 680:
+                    if rx is None or ry is None:
                         error_msg("make a move")
                         continue
-                    if (srx + sry * 3) >= len(collapse):
-                        error_msg("click on the symbol you want to collapse")
+                    # check if is determined
+                    if board[(rx, ry)] and board[(rx, ry)][0][1] < 0:
+                        error_msg("you should not place a symbol in a determined box")
                         continue
-                    if collapse[srx + sry * 3] in (board[_l][0] for _l in collapse_boxes if len(board[_l]) == 1):
-                        error_msg("you must observe the symbol in the closed loop")
-                        continue
+                    # regular move
+                    if not collapse_flag:
+                        collapse_flag = False
+                        # check if the symbol is already in the box
+                        if ((ROUND // 2) % 2, ROUND // 4 + 1) in board[rx, ry]:
+                            error_msg("you should not place two same symbols in one box")
+                            continue
 
-                    eliminated = {(rx, ry), }  # store who has been eliminated
-                    death_note = set()  # store who should be died
-                    board[rx, ry] = [collapse[srx + sry * 3]]  # kill the opposite of which user picked
-                    while len(eliminated) < len(collapse_boxes):  # if everyone is "processed"
-                        for c in collapse_boxes:
-                            if len(board[c]) <= 1:
-                                board[c] = [(board[c][0][0], abs(board[c][0][1]) * -1)]
-                                death_note.add((board[c][0][0], abs(board[c][0][1])))
-                                eliminated.add(c)
-                            for con in collapse_boxes:
-                                board[con] = [o for o in board[con] if o not in death_note]
-                    collapse_flag = False
-                    board_widgets.empty()
-                    current_error_msg = ""
-                update_frame()
+                        # mess with board
+                        board[rx, ry].append(((ROUND // 2) % 2, ROUND // 4 + 1))
+                        rx, ry = None, None
+                        if ROUND % 2 == 1:
+                            # check if it's cyclic
+                            cycle = set()
+                            has_cycle(board)
+                            if len(cycle) > 0:
+                                collapse_flag = True
+                        current_error_msg = ""
+                        ROUND += 1
+                    # collapse move
+                    else:
+                        collapse_flag = True
+                        collapse_boxes = check_collapse(board, cycle)  # the boxes that will be changed
+                        collapse = board[(rx, ry)]  # the box the user chose
+                        # check if user's input is valid
+                        if (srx is None or sry is None):
+                            error_msg("make a move")
+                            continue
+                        if (srx + sry * 3) >= len(collapse):
+                            error_msg("click on the symbol you want to collapse")
+                            continue
+                        if collapse[srx + sry * 3] in (board[_l][0] for _l in collapse_boxes if len(board[_l]) == 1):
+                            error_msg("you must observe the symbol in the closed loop")
+                            continue
+
+                        eliminated = {(rx, ry), }  # store who has been eliminated
+                        death_note = set()  # store who should be died
+                        board[rx, ry] = [collapse[srx + sry * 3]]  # kill the opposite of which user picked
+                        while len(eliminated) < len(collapse_boxes):  # if everyone is "processed"
+                            for c in collapse_boxes:
+                                if len(board[c]) <= 1:
+                                    board[c] = [(board[c][0][0], abs(board[c][0][1]) * -1)]
+                                    death_note.add((board[c][0][0], abs(board[c][0][1])))
+                                    eliminated.add(c)
+                                for con in collapse_boxes:
+                                    board[con] = [o for o in board[con] if o not in death_note]
+                        collapse_flag = False
+                        board_widgets.empty()
+                        current_error_msg = ""
+                    update_frame()
+        await asyncio.sleep(0.0)
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
                 
