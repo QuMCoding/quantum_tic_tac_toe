@@ -1,4 +1,4 @@
-name: Build Space Invaders with Pygbag
+name: Build Quantum Tic Tac Toe with Pygbag
 on:
   push:
     branches:
