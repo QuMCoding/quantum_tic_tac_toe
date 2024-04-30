@@ -9,19 +9,45 @@ from typing import Sequence
 from collections import defaultdict
 import asyncio
 
+import os
+from datetime import datetime
+
+GAMELOG_DIR = "gamelog"
+
+if not os.path.exists(GAMELOG_DIR):
+    os.makedirs(GAMELOG_DIR)
+
+
+class WriteGameLog(object):
+    def __init__(self):
+        self.win = False
+        self.current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        self.log_file_name = f"game_log_{self.current_time}.txt"
+        self.log_path = os.path.join(GAMELOG_DIR, self.log_file_name)
+        self.write_log("Game Start")
+
+    def write_log(self, log_content, collapse_info=None, winning_info=False):
+        if not self.win:
+            self.current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            with open(self.log_path, "a") as f:
+                f.write(f"[{self.current_time}] {log_content}\n")
+                if collapse_info:
+                    f.write(f"Collapse Information: {collapse_info}\n")
+        if winning_info:
+            self.win = True
 
 # 中間的文字
 class CenterText:
     """Centered Text Class"""
 
-    def __init__(self, text, _x, _y, size=20, color=(0, 0, 0)):
+    def __init__(self, text, _x, _y, size=20, color=(0, 0, 0), bold=False):
         # 設定中心位置
         self.x = _x
         self.y = _y
 
         # 將pygame的字體設定好
         pygame.font.init()
-        font = pygame.font.SysFont("Consolas", size)
+        font = pygame.font.SysFont("Consolas", size, bold=bold)
         self.txt = font.render(text, True, color)  # 將需要的字轉化成pygame物件
         self.size = font.size(text)  # (width, height)
 
@@ -122,6 +148,41 @@ def check_collapse(board_wanted, target_cycle):
         waiting.pop(0)
     return touched
 
+winning_combinations = [
+    [(0, 0), (0, 1), (0, 2)],
+    [(1, 0), (1, 1), (1, 2)],
+    [(2, 0), (2, 1), (2, 2)],
+    [(0, 0), (1, 0), (2, 0)],
+    [(0, 1), (1, 1), (2, 1)],
+    [(0, 2), (1, 2), (2, 2)],
+    [(0, 0), (1, 1), (2, 2)],
+    [(0, 2), (1, 1), (2, 0)]
+]
+
+# 檢查有沒有贏家
+def check_winner(board_wanted):
+    for sim in (0, 1):
+        for i in winning_combinations:
+            c = True
+            for j in i:
+                if c:
+                    if not j in board_wanted:
+                        c = False
+                        continue
+                    else:
+                        if len(board_wanted[j]) > 1:
+                            c = False
+                            continue
+                        if board_wanted[j][0][1] > 0:
+                            c = False
+                            continue
+                        if board_wanted[j][0][0] != sim:
+                            c = False
+                            continue
+            if c:
+                # print(sim)
+                return sim
+    return None
 
 # 將dict格式的board渲染到畫面上
 def board_render(board_wanted=None) -> None:
@@ -144,39 +205,77 @@ def error_msg(msg):
 
 
 # 更新1幀
-def update_frame():
-    root.fill((255, 255, 255))  # 將整個畫面洗白
-    board_render(board)
-    board_widgets.draw(root)
-    # 畫框框
-    for r in range(3):
-        for c in range(3):
-            pygame.draw.rect(root, (0, 0, 0), pygame.Rect(80 + c * 150, 100 + r * 150, 150, 150), 3)
-
-    # 設定畫面內標題
-    head_font = CenterText("quantum tic-tac-toe", 300, 30, size=40, color=(0, 0, 0))
-    head_font.draw(root)
-
-    # 設定畫面內說明文字
-    if not collapse_flag:
-        if (ROUND // 2) % 2 == 0:
-            turn_font = CenterText("X's turn", 300, 80, size=20, color=(0, 0, 0))
-        else:
-            turn_font = CenterText("O's turn", 300, 80, size=20, color=(0, 0, 0))
+def update_frame(winner=None):
+    root.fill((255, 255, 255))  # Fill the entire screen with white
+    if winner is not None:
+        # Draw the winner
+        win_font = CenterText(f"{'O' if winner else 'X'} won!", 300, 80, size=40, color=(255, 0, 0), bold=True)
+        win_font.draw(root)
+        # Draw the boxes
+        for r in range(3):
+            for c in range(3):
+                rect = pygame.Rect(80 + c * 150, 100 + r * 150, 150, 150)
+                if hover_x == c and hover_y == r:
+                    pygame.draw.rect(root, (200, 200, 200), rect)
+                if rx == c and ry == r:
+                    pygame.draw.rect(root, (200, 200, 0), rect)
+                pygame.draw.rect(root, (0, 0, 0), rect, 3)
+        
+        board_render(board)
+        board_widgets.draw(root)
+        
+        # Set the title
+        head_font = CenterText("quantum tic-tac-toe", 300, 30, size=40, color=(0, 0, 0))
+        head_font.draw(root)
+        # Draw the reset button
+        pygame.draw.rect(root, (200, 0, 0), pygame.Rect(300, 600, 150, 80), border_radius=10)
+        reset_btn_word = CenterText("restart", 375, 640, size=30, color=(255, 255, 255)) 
+        reset_btn_word.draw(root)
     else:
-        turn_font = CenterText("collapse mode", 300, 80, size=20, color=(0, 0, 0))
-    turn_font.draw(root)
-
-    # 錯誤訊息繪製
-    error_font = CenterText(current_error_msg, 300, 575, size=20, color=(200, 0, 0))
-    error_font.draw(root)
-
-    # 畫按鈕
-    pygame.draw.rect(root, (0, 100, 200), pygame.Rect(100, 600, 150, 80), border_radius=10)
-    action_btn_word = CenterText("action", 175, 640, size=30, color=(255, 255, 255))
-    action_btn_word.draw(root)
-    board_widgets.update()
+        # Draw the boxes
+        for r in range(3):
+            for c in range(3):
+                rect = pygame.Rect(80 + c * 150, 100 + r * 150, 150, 150)
+                if hover_x == c and hover_y == r:
+                    pygame.draw.rect(root, (200, 200, 200), rect)
+                if rx == c and ry == r:
+                    pygame.draw.rect(root, (200, 200, 0), rect)
+                pygame.draw.rect(root, (0, 0, 0), rect, 3)
+        
+        board_render(board)
+        board_widgets.draw(root)
+        
+        # Set the title
+        head_font = CenterText("quantum tic-tac-toe", 300, 30, size=40, color=(0, 0, 0))
+        head_font.draw(root)
+        
+        # Set the turn message
+        if not collapse_flag:
+            if (ROUND // 2) % 2 == 0:
+                turn_font = CenterText("X's turn", 300, 80, size=20, color=(0, 0, 0))
+            else:
+                turn_font = CenterText("O's turn", 300, 80, size=20, color=(0, 0, 0))
+        else:
+            turn_font = CenterText("collapse mode", 300, 80, size=20, color=(0, 0, 0))
+        turn_font.draw(root)
+        
+        # Draw error message
+        error_font = CenterText(current_error_msg, 300, 575, size=20, color=(200, 0, 0))
+        error_font.draw(root)
+        
+        # Draw action button
+        pygame.draw.rect(root, (0, 100, 200), pygame.Rect(100, 600, 150, 80), border_radius=10)
+        action_btn_word = CenterText("action", 175, 640, size=30, color=(255, 255, 255))
+        action_btn_word.draw(root)
+        
+        # Draw reset button
+        pygame.draw.rect(root, (200, 0, 0), pygame.Rect(350, 600, 150, 80), border_radius=10)
+        reset_btn_word = CenterText("restart", 425, 640, size=30, color=(255, 255, 255))
+        reset_btn_word.draw(root)
+        
+        board_widgets.update()
     pygame.display.update()
+
 
 
 # 初始化pygame
@@ -186,111 +285,174 @@ root = pygame.display.set_mode((600, 800))
 # 設定視窗標題
 pygame.display.set_caption("quantum tic-tac-toe")
 
-# 定義遊戲內狀況
-board = defaultdict(list)
+def init():
+    global WGL, ROUND, hover_x, hover_y, rx, ry, srx, sry, collapse_flag, current_error_msg, board, cycle, board_widgets, winner
+    WGL = WriteGameLog()
 
-ROUND = 0  # 第幾回合
-rx, ry, srx, sry = None, None, None, None  # 使用者目前與哪一格互動
+    # 定義遊戲內狀況
+    board = defaultdict(list)
 
-cycle = set()  # 有沒有cycle
-has_cycle(board)  # 找出cycle
-collapse_flag = False
+    hover_x, hover_y = None, None  # 滑鼠在哪一格
 
-current_error_msg = ""  # 當前的錯誤訊息
+    ROUND = 0  # 第幾回合
+    winner = None  # 誰贏了
+    rx, ry, srx, sry = None, None, None, None  # 使用者目前與哪一格互動
 
-# 畫OOXX的群組
-board_widgets = pygame.sprite.Group()
+    cycle = set()  # 有沒有cycle
+    has_cycle(board)  # 找出cycle
+    collapse_flag = False
 
+    current_error_msg = ""  # 當前的錯誤訊息
+
+    # 畫OOXX的群組
+    board_widgets = pygame.sprite.Group()
 
 async def main():
-    global ROUND, rx, ry, srx, sry, collapse_flag, current_error_msg, board, cycle, board_widgets
+    global WGL, ROUND, hover_x, hover_y, rx, ry, srx, sry, collapse_flag, current_error_msg, board, cycle, board_widgets, winner
+    init()
     update_frame()
 
     while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            if event.type == pygame.MOUSEBUTTONUP:
-                x, y = pygame.mouse.get_pos()
-                # boxes
-                _rx = (x - 80) // 150
-                _ry = (y - 100) // 150
-                _rx = _rx if 0 <= _rx <= 2 else None
-                _ry = _ry if 0 <= _ry <= 2 else None
-                if not (_rx is None or _ry is None):
-                    rx, ry = _rx, _ry
-                    # in collapse mode, need more detail.
-                    if collapse_flag:
-                        sub_rx = (x - 80 - rx * 150) // 50
-                        sub_ry = (y - 100 - ry * 150) // 50
-                        sub_rx = sub_rx if 0 <= sub_rx <= 2 else None
-                        sub_ry = sub_ry if 0 <= sub_ry <= 2 else None
-                        if not (sub_rx is None or sub_ry is None):
-                            srx, sry = sub_rx, sub_ry
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = pygame.mouse.get_pos()
-                # triggered the button
-                if 100 <= x <= 250 and 600 <= y <= 680:
-                    if rx is None or ry is None:
-                        error_msg("make a move")
-                        continue
-                    # check if is determined
-                    if board[(rx, ry)] and board[(rx, ry)][0][1] < 0:
-                        error_msg("you should not place a symbol in a determined box")
-                        continue
-                    # regular move
-                    if not collapse_flag:
-                        collapse_flag = False
-                        # check if the symbol is already in the box
-                        if ((ROUND // 2) % 2, ROUND // 4 + 1) in board[rx, ry]:
-                            error_msg("you should not place two same symbols in one box")
-                            continue
+        if winner is not None:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    WGL.write_log("Game End")
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONUP:
+                    x, y = pygame.mouse.get_pos()
+                    if 300 <= x <= 450 and 600 <= y <= 680:
+                        WGL.write_log("Game Restart")
+                        init()
 
-                        # mess with board
-                        board[rx, ry].append(((ROUND // 2) % 2, ROUND // 4 + 1))
-                        rx, ry = None, None
-                        if ROUND % 2 == 1:
-                            # check if it's cyclic
-                            cycle = set()
-                            has_cycle(board)
-                            if len(cycle) > 0:
-                                collapse_flag = True
+            WGL.write_log(f"Player {winner} wins", winning_info=True)
+            update_frame(winner)
+        else:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    WGL.write_log("Game End")
+                    pygame.quit()
+                    sys.exit()
+                if event.type == pygame.MOUSEBUTTONUP:
+                    x, y = pygame.mouse.get_pos()
+                    # boxes
+                    _rx = (x - 80) // 150
+                    _ry = (y - 100) // 150
+                    _rx = _rx if 0 <= _rx <= 2 else None
+                    _ry = _ry if 0 <= _ry <= 2 else None
+                    if not (_rx is None or _ry is None):
+                        rx, ry = _rx, _ry
+                        # in collapse mode, need more detail.
+                        if collapse_flag:
+                            sub_rx = (x - 80 - rx * 150) // 50
+                            sub_ry = (y - 100 - ry * 150) // 50
+                            sub_rx = sub_rx if 0 <= sub_rx <= 2 else None
+                            sub_ry = sub_ry if 0 <= sub_ry <= 2 else None
+                            if not (sub_rx is None or sub_ry is None):
+                                srx, sry = sub_rx, sub_ry
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    x, y = pygame.mouse.get_pos()
+                    _rx = (x - 80) // 150
+                    _ry = (y - 100) // 150
+                    _rx = _rx if 0 <= _rx <= 2 else None
+                    _ry = _ry if 0 <= _ry <= 2 else None
+                    if not (_rx is None or _ry is None):
+                        rx, ry = _rx, _ry
+                        update_frame()
+                    # triggered the button
+                    if 350 <= x <= 500 and 600 <= y <= 680:
+                        ROUND = 0
+                        rx, ry, srx, sry = None, None, None, None
+                        cycle = set()
+                        has_cycle(board)
+                        collapse_flag = False
                         current_error_msg = ""
-                        ROUND += 1
-                    # collapse move
-                    else:
-                        collapse_flag = True
-                        collapse_boxes = check_collapse(board, cycle)  # the boxes that will be changed
-                        collapse = board[(rx, ry)]  # the box the user chose
-                        # check if user's input is valid
-                        if (srx is None or sry is None):
+                        board.clear()
+                        board_widgets.empty()
+                        update_frame()
+                        WGL.write_log("Game Restart")
+                        WGL = WriteGameLog()
+                    if 100 <= x <= 250 and 600 <= y <= 680:
+                        if rx is None or ry is None:
                             error_msg("make a move")
                             continue
-                        if (srx + sry * 3) >= len(collapse):
-                            error_msg("click on the symbol you want to collapse")
+                        # check if is determined
+                        if board[(rx, ry)] and board[(rx, ry)][0][1] < 0:
+                            error_msg("you should not place a symbol in a determined box")
                             continue
-                        if collapse[srx + sry * 3] in (board[_l][0] for _l in collapse_boxes if len(board[_l]) == 1):
-                            error_msg("you must observe the symbol in the closed loop")
-                            continue
+                        # regular move
+                        if not collapse_flag:
+                            collapse_flag = False
+                            # check if the symbol is already in the box
+                            if ((ROUND // 2) % 2, ROUND // 4 + 1) in board[rx, ry]:
+                                error_msg("you should not place two same symbols in one box")
+                                continue
 
-                        eliminated = {(rx, ry), }  # store who has been eliminated
-                        death_note = set()  # store who should be died
-                        board[rx, ry] = [collapse[srx + sry * 3]]  # kill the opposite of which user picked
-                        while len(eliminated) < len(collapse_boxes):  # if everyone is "processed"
-                            for c in collapse_boxes:
-                                if len(board[c]) <= 1:
-                                    board[c] = [(board[c][0][0], abs(board[c][0][1]) * -1)]
-                                    death_note.add((board[c][0][0], abs(board[c][0][1])))
-                                    eliminated.add(c)
-                                for con in collapse_boxes:
-                                    board[con] = [o for o in board[con] if o not in death_note]
-                        collapse_flag = False
-                        board_widgets.empty()
-                        current_error_msg = ""
-                    update_frame()
+                            # mess with board
+                            board[rx, ry].append(((ROUND // 2) % 2, ROUND // 4 + 1))
+                            WGL.write_log(f"Player {((ROUND // 2) % 2) + 1} placed a {'O' if  ((ROUND // 2) % 2) else 'X'}{(ROUND // 2) + 1} in box ({rx}, {ry})")
+                            rx, ry = None, None
+                            if ROUND % 2 == 1:
+                                # check if it's cyclic
+                                cycle = set()
+                                has_cycle(board)
+                                if len(cycle) > 0:
+                                    collapse_flag = True
+                            current_error_msg = ""
+                            ROUND += 1
+                        # collapse move
+                        else:
+                            collapse_flag = True
+                            collapse_boxes = check_collapse(board, cycle)  # the boxes that will be changed
+                            collapse = board[(rx, ry)]  # the box the user chose
+                            # check if user's input is valid
+                            if (srx is None or sry is None):
+                                error_msg("make a move")
+                                continue
+                            if (srx + sry * 3) >= len(collapse):
+                                error_msg("click on the symbol you want to collapse")
+                                continue
+                            if collapse[srx + sry * 3] in (board[_l][0] for _l in collapse_boxes if len(board[_l]) == 1):
+                                error_msg("you must observe the symbol in the closed loop")
+                                continue
+                            eliminated = {(rx, ry), }  # store who has been eliminated
+                            death_note = set()  # store who should be died
+                            board[rx, ry] = [collapse[srx + sry * 3]]  # kill the opposite of which user picked
+                            while len(eliminated) < len(collapse_boxes):  # if everyone is "processed"
+                                for c in collapse_boxes:
+                                    if len(board[c]) <= 1:
+                                        board[c] = [(board[c][0][0], abs(board[c][0][1]) * -1)]
+                                        death_note.add((board[c][0][0], abs(board[c][0][1])))
+                                        eliminated.add(c)
+                                    for con in collapse_boxes:
+                                        board[con] = [o for o in board[con] if o not in death_note]
+                            WGL.write_log(f"Player {(((ROUND + 1) // 2) % 2) + 1} collapsed the box ({rx}, {ry}){'O' if board[rx, ry][0][0] else 'X'}{abs(board[rx, ry][0][1])}")
+                            collapse_flag = False
+                            board_widgets.empty()
+                            current_error_msg = ""
+                            try:
+                                winner = check_winner(board)
+                            except Exception as e:
+                                print(e)
+                                continue
+                        update_frame()
+
+                if event.type == pygame.MOUSEMOTION:  # Check for mouse motion
+                    x, y = event.pos
+                    # Check if mouse is over a box
+                    _rx = (x - 80) // 150
+                    _ry = (y - 100) // 150
+                    _rx = _rx if 0 <= _rx <= 2 else None
+                    _ry = _ry if 0 <= _ry <= 2 else None
+                    if not (_rx is None or _ry is None):
+                        hover_x, hover_y = _rx, _ry
+                        update_frame()
+                        # print("Mouse is over box", _ry, _rx)
+                    else:
+                        hover_x, hover_y = None, None
+                        update_frame()
+                        # print("Mouse is not over a box")
         await asyncio.sleep(0.0)
-
 
 if __name__ == '__main__':
     asyncio.run(main())
