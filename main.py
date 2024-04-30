@@ -227,9 +227,13 @@ def update_frame(winner=None):
         # Set the title
         head_font = CenterText("quantum tic-tac-toe", 300, 30, size=40, color=(0, 0, 0))
         head_font.draw(root)
+        # Draw the exit button
+        pygame.draw.rect(root, (0, 150, 250) if hover_action else (0, 100, 200), pygame.Rect(100, 600, 150, 80), border_radius=10)
+        action_btn_word = CenterText("exit", 175, 640, size=30, color=(255, 255, 255))
+        action_btn_word.draw(root)
         # Draw the reset button
-        pygame.draw.rect(root, (200, 0, 0), pygame.Rect(300, 600, 150, 80), border_radius=10)
-        reset_btn_word = CenterText("restart", 375, 640, size=30, color=(255, 255, 255)) 
+        pygame.draw.rect(root, (250, 0, 0) if hover_restart else (200, 0, 0), pygame.Rect(350, 600, 150, 80), border_radius=10)
+        reset_btn_word = CenterText("restart", 425, 640, size=30, color=(255, 255, 255))
         reset_btn_word.draw(root)
     else:
         # Draw the boxes
@@ -264,12 +268,12 @@ def update_frame(winner=None):
         error_font.draw(root)
         
         # Draw action button
-        pygame.draw.rect(root, (0, 100, 200), pygame.Rect(100, 600, 150, 80), border_radius=10)
+        pygame.draw.rect(root, (0, 150, 250) if hover_action else (0, 100, 200), pygame.Rect(100, 600, 150, 80), border_radius=10)
         action_btn_word = CenterText("action", 175, 640, size=30, color=(255, 255, 255))
         action_btn_word.draw(root)
         
         # Draw reset button
-        pygame.draw.rect(root, (200, 0, 0), pygame.Rect(350, 600, 150, 80), border_radius=10)
+        pygame.draw.rect(root, (250, 0, 0) if hover_restart else (200, 0, 0), pygame.Rect(350, 600, 150, 80), border_radius=10)
         reset_btn_word = CenterText("restart", 425, 640, size=30, color=(255, 255, 255))
         reset_btn_word.draw(root)
         
@@ -286,13 +290,14 @@ root = pygame.display.set_mode((600, 800))
 pygame.display.set_caption("quantum tic-tac-toe")
 
 def init():
-    global WGL, ROUND, hover_x, hover_y, rx, ry, srx, sry, collapse_flag, current_error_msg, board, cycle, board_widgets, winner
+    global WGL, ROUND, hover_x, hover_y, hover_action, hover_restart, rx, ry, srx, sry, collapse_flag, current_error_msg, board, cycle, board_widgets, winner
     WGL = WriteGameLog()
 
     # 定義遊戲內狀況
     board = defaultdict(list)
 
     hover_x, hover_y = None, None  # 滑鼠在哪一格
+    hover_action, hover_restart = None, None # 滑鼠在哪一個按鈕
 
     ROUND = 0  # 第幾回合
     winner = None  # 誰贏了
@@ -308,7 +313,7 @@ def init():
     board_widgets = pygame.sprite.Group()
 
 async def main():
-    global WGL, ROUND, hover_x, hover_y, rx, ry, srx, sry, collapse_flag, current_error_msg, board, cycle, board_widgets, winner
+    global WGL, ROUND, hover_x, hover_y, hover_action, hover_restart, rx, ry, srx, sry, collapse_flag, current_error_msg, board, cycle, board_widgets, winner
     init()
     update_frame()
 
@@ -319,11 +324,25 @@ async def main():
                     WGL.write_log("Game End")
                     pygame.quit()
                     sys.exit()
-                if event.type == pygame.MOUSEBUTTONUP:
+                if event.type == pygame.MOUSEBUTTONDOWN:
                     x, y = pygame.mouse.get_pos()
-                    if 300 <= x <= 450 and 600 <= y <= 680:
+                    if 350 <= x <= 500 and 600 <= y <= 680:
                         WGL.write_log("Game Restart")
                         init()
+                        update_frame()
+                    if 100 <= x <= 250 and 600 <= y <= 680:
+                        WGL.write_log("Game End")
+                        pygame.quit()
+                        sys.exit()
+                if event.type == pygame.MOUSEMOTION:
+                    x, y = event.pos
+                    if 300 <= x <= 450 and 600 <= y <= 680:
+                        hover_restart = True
+                    elif 100 <= x <= 250 and 600 <= y <= 680:
+                        hover_action = True
+                    else:
+                        hover_restart, hover_action = None, None
+                    update_frame(winner)
 
             WGL.write_log(f"Player {winner} wins", winning_info=True)
             update_frame(winner)
@@ -370,8 +389,9 @@ async def main():
                         board.clear()
                         board_widgets.empty()
                         update_frame()
-                        WGL.write_log("Game Restart")
-                        WGL = WriteGameLog()
+                        if not board == {}:
+                            WGL.write_log("Game Restart")
+                            WGL = WriteGameLog()
                     if 100 <= x <= 250 and 600 <= y <= 680:
                         if rx is None or ry is None:
                             error_msg("make a move")
@@ -448,8 +468,14 @@ async def main():
                         hover_x, hover_y = _rx, _ry
                         update_frame()
                         # print("Mouse is over box", _ry, _rx)
+                    elif 100 <= x <= 250 and 600 <= y <= 680:
+                        hover_action = True
+                        update_frame()
+                    elif 350 <= x <= 500 and 600 <= y <= 680:
+                        hover_restart = True
+                        update_frame()
                     else:
-                        hover_x, hover_y = None, None
+                        hover_x, hover_y, hover_action, hover_restart = None, None, None, None
                         update_frame()
                         # print("Mouse is not over a box")
         await asyncio.sleep(0.0)
