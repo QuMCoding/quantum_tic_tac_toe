@@ -432,9 +432,26 @@ async def main():
                             if (srx + sry * 3) >= len(collapse):
                                 error_msg("click on the symbol you want to collapse")
                                 continue
-                            if collapse[srx + sry * 3] in (board[_l][0] for _l in collapse_boxes if len(board[_l]) == 1):
-                                error_msg("you must observe the symbol in the closed loop")
+                            exit_closed_loop_flag = False
+                            retrace_board = board.copy()
+                            while True:
+                                retrace_only_one = [i for i in collapse_boxes if len(retrace_board[i]) == 1]
+                                if collapse[srx + sry * 3] in (retrace_board[_l][0] for _l in retrace_only_one):
+                                    error_msg("you must observe the symbol in the closed loop")
+                                    exit_closed_loop_flag = True
+                                    break
+                                # remove the pair of only one inside board
+                                for _l in retrace_only_one:
+                                    die_symbol = retrace_board[_l][0]
+                                    for con in collapse_boxes:
+                                        retrace_board[con] = [o for o in retrace_board[con] if o not in (die_symbol,)]
+
+                                if len(retrace_only_one) == 0:
+                                    break
+                            if exit_closed_loop_flag:
                                 continue
+
+                            # start eliminating/collapsing
                             eliminated = {(rx, ry), }  # store who has been eliminated
                             death_note = set()  # store who should be died
                             board[rx, ry] = [collapse[srx + sry * 3]]  # kill the opposite of which user picked
