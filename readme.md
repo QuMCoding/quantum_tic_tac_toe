@@ -13,6 +13,13 @@ Welcome to Quantum Tic Tac Toe! This project combines the classic game of Tic Ta
 
 ## Installation
 
+### Website
+
+Click the link and play:
+https://qumcoding.github.io/quantum_tic_tac_toe/
+
+### Run on local machine
+
 To run Quantum Tic Tac Toe on your machine, follow these steps:
 
 1. Clone the repository to your local machine:
@@ -91,6 +98,13 @@ This game combines the classic Tic Tac Toe with the intriguing principles of qua
 4. [環境](#環境)
 
 ## 安裝
+
+### 網頁
+
+點擊以下連結並遊玩：
+https://qumcoding.github.io/quantum_tic_tac_toe/
+
+### 在本機電腦運行
 
 依照以下步驟以在本機電腦上運行量子圈圈叉叉：
 
