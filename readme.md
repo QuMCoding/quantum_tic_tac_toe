@@ -160,7 +160,7 @@ https://qumcoding.github.io/quantum_tic_tac_toe/
 3. 勝利
     因為 TwTom 很懶，所以程式不會告訴你勝利條件。
 
-## 依賴
+## 環境
 
 * Python 3.5 (含)以上
 * Pygame
