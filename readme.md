@@ -56,7 +56,7 @@ This game combines the classic Tic Tac Toe with the intriguing principles of qua
 
     When a set of "quantum entangled" cells forms a closed loop, it needs to be "observed."
     After observation, the quantum state of the letters collapses, determining the content of the cells.
-    The observed symbol is sure to be "exist," and turned into a "determined" symbol, where the entanglement symbol is "vanished." When the box is determined, other symbols inside the box "vanished." When there's only one symbol left alone in the box or the symbol whose entanglement has vanished, that symbol is also "determined."
+    The observed symbol is sure to be "exist," and turned into a "classic" symbol, where the entanglement symbol is "vanished." When the box is observed, other symbols inside the box "vanished." When there's only one symbol left alone in the box or the symbol whose entanglement has vanished, that symbol will automatically be "classic."
 
     You should choose the symbol that is inside the closed loop to observe.
 4. Winning Conditions:
@@ -79,7 +79,7 @@ This game combines the classic Tic Tac Toe with the intriguing principles of qua
 
 3. Winning
 
-    The program won't tell you who has won when the game ends, because I'm lazy.
+    Just like normal Tic-Tac-Toe, when you make a line with classic marks, you win.
 
 ## Requirements
 
@@ -158,7 +158,7 @@ https://qumcoding.github.io/quantum_tic_tac_toe/
     如果發生封閉迴圈，要進行下一步的玩家應該選擇觀察哪個字母。按一下您要觀察的字母，然後按一下 `action` 按鈕。
 
 3. 勝利
-    因為 TwTom 很懶，所以程式不會告訴你勝利條件。
+    就跟普通的圈圈叉叉一樣，只要連成一線即獲勝。
 
 ## 環境
 
